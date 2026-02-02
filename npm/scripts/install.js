@@ -1,0 +1,131 @@
+#!/usr/bin/env node
+
+const { execSync } = require("child_process");
+const fs = require("fs");
+const path = require("path");
+const https = require("https");
+
+const VERSION = process.env.MSH_VERSION || "latest";
+const REPO = "ramarlina/mesh-cli";
+
+const PLATFORM_MAP = {
+  darwin: "darwin",
+  linux: "linux",
+  win32: "windows",
+};
+
+const ARCH_MAP = {
+  x64: "amd64",
+  arm64: "arm64",
+};
+
+async function getLatestVersion() {
+  return new Promise((resolve, reject) => {
+    https.get(
+      `https://api.github.com/repos/${REPO}/releases/latest`,
+      { headers: { "User-Agent": "mesh-cli" } },
+      (res) => {
+        let data = "";
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () => {
+          try {
+            const json = JSON.parse(data);
+            resolve(json.tag_name);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      }
+    ).on("error", reject);
+  });
+}
+
+async function download(url, dest) {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    https.get(url, { headers: { "User-Agent": "mesh-cli" } }, (res) => {
+      if (res.statusCode === 302 || res.statusCode === 301) {
+        download(res.headers.location, dest).then(resolve).catch(reject);
+        return;
+      }
+      res.pipe(file);
+      file.on("finish", () => {
+        file.close();
+        resolve();
+      });
+    }).on("error", (err) => {
+      fs.unlink(dest, () => {});
+      reject(err);
+    });
+  });
+}
+
+async function extract(archive, dest) {
+  const isWindows = process.platform === "win32";
+  if (isWindows) {
+    execSync(`tar -xzf "${archive}" -C "${path.dirname(dest)}"`, { stdio: "ignore" });
+  } else {
+    execSync(`tar -xzf "${archive}" -C "${path.dirname(dest)}"`, { stdio: "ignore" });
+  }
+}
+
+async function main() {
+  const platform = PLATFORM_MAP[process.platform];
+  const arch = ARCH_MAP[process.arch];
+
+  if (!platform || !arch) {
+    console.error(`Unsupported platform: ${process.platform} ${process.arch}`);
+    process.exit(1);
+  }
+
+  const binDir = path.join(__dirname, "..", "bin");
+  const binPath = path.join(binDir, process.platform === "win32" ? "msh.exe" : "msh");
+
+  // Skip if binary already exists (for CI caching)
+  if (fs.existsSync(binPath)) {
+    console.log("msh binary already exists, skipping download");
+    return;
+  }
+
+  console.log("Installing msh...");
+
+  try {
+    const version = VERSION === "latest" ? await getLatestVersion() : VERSION;
+    const ext = platform === "windows" ? "zip" : "tar.gz";
+    const filename = `msh_${version.replace("v", "")}_${platform}_${arch}.${ext}`;
+    const url = `https://github.com/${REPO}/releases/download/${version}/${filename}`;
+
+    const tmpDir = path.join(__dirname, "..", ".tmp");
+    fs.mkdirSync(tmpDir, { recursive: true });
+    fs.mkdirSync(binDir, { recursive: true });
+
+    const archivePath = path.join(tmpDir, filename);
+
+    console.log(`Downloading ${filename}...`);
+    await download(url, archivePath);
+
+    console.log("Extracting...");
+    await extract(archivePath, binPath);
+
+    // Move binary to bin directory
+    const extractedBin = path.join(tmpDir, process.platform === "win32" ? "msh.exe" : "msh");
+    if (fs.existsSync(extractedBin)) {
+      fs.renameSync(extractedBin, binPath);
+    }
+
+    // Make executable
+    if (process.platform !== "win32") {
+      fs.chmodSync(binPath, 0o755);
+    }
+
+    // Cleanup
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+
+    console.log("msh installed successfully!");
+  } catch (err) {
+    console.error("Failed to install msh:", err.message);
+    process.exit(1);
+  }
+}
+
+main();
