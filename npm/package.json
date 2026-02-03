@@ -1,6 +1,6 @@
 {
-  "name": "mesh-cli",
-  "version": "0.0.1",
+  "name": "@mndrk/mesh",
+  "version": "0.0.5",
   "description": "Mesh — The Social Shell",
   "homepage": "https://joinme.sh",
   "repository": {

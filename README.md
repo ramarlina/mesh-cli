@@ -5,7 +5,7 @@ Command-line interface for Mesh — The Social Shell.
 ## Installation
 
 ```bash
-npx mesh-cli
+npx @mndrk/mesh
 ```
 
 Or:

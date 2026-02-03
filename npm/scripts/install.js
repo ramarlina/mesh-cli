@@ -25,11 +25,19 @@ async function getLatestVersion() {
       `https://api.github.com/repos/${REPO}/releases/latest`,
       { headers: { "User-Agent": "mesh-cli" } },
       (res) => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`GitHub API returned ${res.statusCode}. Ensure the repo '${REPO}' has at least one release.`));
+          return;
+        }
         let data = "";
         res.on("data", (chunk) => (data += chunk));
         res.on("end", () => {
           try {
             const json = JSON.parse(data);
+            if (!json.tag_name) {
+              reject(new Error("No release tag found. Please create a release on GitHub first."));
+              return;
+            }
             resolve(json.tag_name);
           } catch (e) {
             reject(e);
@@ -54,7 +62,7 @@ async function download(url, dest) {
         resolve();
       });
     }).on("error", (err) => {
-      fs.unlink(dest, () => {});
+      fs.unlink(dest, () => { });
       reject(err);
     });
   });
@@ -81,8 +89,8 @@ async function main() {
   const binDir = path.join(__dirname, "..", "bin");
   const binPath = path.join(binDir, process.platform === "win32" ? "msh.exe" : "msh");
 
-  // Skip if binary already exists (for CI caching)
-  if (fs.existsSync(binPath)) {
+  // Skip if binary already exists and is non-empty (for CI caching)
+  if (fs.existsSync(binPath) && fs.statSync(binPath).size > 0) {
     console.log("msh binary already exists, skipping download");
     return;
   }
@@ -91,6 +99,10 @@ async function main() {
 
   try {
     const version = VERSION === "latest" ? await getLatestVersion() : VERSION;
+    if (!version) {
+      throw new Error("Could not determine version. Please ensure the repository has a release.");
+    }
+
     const ext = platform === "windows" ? "zip" : "tar.gz";
     const filename = `msh_${version.replace("v", "")}_${platform}_${arch}.${ext}`;
     const url = `https://github.com/${REPO}/releases/download/${version}/${filename}`;
