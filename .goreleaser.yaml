@@ -8,7 +8,7 @@ before:
 
 builds:
   - id: msh
-    main: ./cmd/msh/main.go
+    main: ./cmd/msh
     binary: msh
     env:
       - CGO_ENABLED=0

@@ -1,6 +1,6 @@
 # Binaries
 bin/
-msh
+/msh
 *.exe
 *.exe~
 *.dll
