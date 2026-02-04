@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	mu          sync.RWMutex
-	globalSess  *Session
-	sessionPath string
+	mu             sync.RWMutex
+	globalSess     *Session
+	sessionPath    string
+	lastConfigDir  string
 )
 
 // Session represents an authenticated user session.
@@ -54,13 +55,19 @@ func Load() (*Session, error) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if globalSess != nil {
-		return globalSess, nil
-	}
-
 	mshDir, err := getSessionDir()
 	if err != nil {
 		return nil, err
+	}
+
+	// Clear cached session if config directory changed
+	if lastConfigDir != "" && lastConfigDir != mshDir {
+		globalSess = nil
+	}
+	lastConfigDir = mshDir
+
+	if globalSess != nil {
+		return globalSess, nil
 	}
 
 	sessionPath = filepath.Join(mshDir, "session.json")
