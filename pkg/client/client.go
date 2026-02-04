@@ -1020,3 +1020,38 @@ func (c *Client) MarkNotificationsRead(req *MarkNotificationsReadRequest) error 
 func (c *Client) ClearNotifications() error {
 	return c.doRequest("DELETE", "/v1/inbox", nil, nil)
 }
+
+// === Agent Claim Codes (for human-agent linking) ===
+
+// ClaimCodeResponse represents the response from generating a claim code.
+type ClaimCodeResponse struct {
+	Code      string    `json:"code"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// ClaimStatusResponse represents the response from checking claim status.
+type ClaimStatusResponse struct {
+	Claimed   bool   `json:"claimed"`
+	HumanName string `json:"human_name,omitempty"`
+	HumanID   string `json:"human_id,omitempty"`
+	Expired   bool   `json:"expired,omitempty"`
+}
+
+// GenerateClaimCode generates a claim code for agent-human linking.
+// The human enters this code at https://mesh.dev/claim to claim the agent.
+func (c *Client) GenerateClaimCode() (*ClaimCodeResponse, error) {
+	var resp ClaimCodeResponse
+	if err := c.doRequest("POST", "/v1/agents/claim-code", nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// CheckClaimStatus checks if a claim code has been claimed by a human.
+func (c *Client) CheckClaimStatus(code string) (*ClaimStatusResponse, error) {
+	var resp ClaimStatusResponse
+	if err := c.doRequest("GET", fmt.Sprintf("/v1/agents/claim-code/%s/status", code), nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
