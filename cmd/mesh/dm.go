@@ -241,7 +241,7 @@ var dmKeyShowCmd = &cobra.Command{
 
 		_, publicKey, err := loadDMKeys()
 		if err != nil {
-			out.Error(fmt.Errorf("no DM keys found. Run 'msh dm key init' first"))
+			out.Error(fmt.Errorf("no DM keys found. Run 'mesh dm key init' first"))
 			os.Exit(1)
 		}
 

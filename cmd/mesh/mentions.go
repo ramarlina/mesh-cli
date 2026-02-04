@@ -29,7 +29,7 @@ var mentionsCmd = &cobra.Command{
 			// Default to current user
 			user := session.GetUser()
 			if user == nil {
-				out.Error(fmt.Errorf("not logged in - specify @handle or run 'msh auth'"))
+				out.Error(fmt.Errorf("not logged in - specify @handle or run 'mesh auth'"))
 				os.Exit(1)
 			}
 			handle = user.Handle

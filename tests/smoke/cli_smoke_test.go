@@ -37,9 +37,9 @@ func NewSmokeTestConfig(t *testing.T) *SmokeTestConfig {
 	if cliBinary == "" {
 		// Try to find the binary in common locations
 		locations := []string{
-			filepath.Join("..", "..", "msh"),
-			filepath.Join("..", "..", "bin", "msh"),
-			"msh",
+			filepath.Join("..", "..", "mesh"),
+			filepath.Join("..", "..", "bin", "mesh"),
+			"mesh",
 		}
 
 		for _, loc := range locations {
@@ -51,7 +51,7 @@ func NewSmokeTestConfig(t *testing.T) *SmokeTestConfig {
 	}
 
 	if cliBinary == "" {
-		cliBinary = "msh" // Assume it's in PATH
+		cliBinary = "mesh" // Assume it's in PATH
 	}
 
 	// Get API URL from environment
@@ -108,7 +108,7 @@ func TestCLIBasicCommands(t *testing.T) {
 			t.Errorf("Expected exit code 0, got %d. Stderr: %s", exitCode, stderr)
 		}
 
-		if !strings.Contains(stdout, "Mesh") && !strings.Contains(stdout, "msh") {
+		if !strings.Contains(stdout, "Mesh") && !strings.Contains(stdout, "mesh") {
 			t.Errorf("Help output should contain 'Mesh' or 'msh'. Got: %s", stdout)
 		}
 	})

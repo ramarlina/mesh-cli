@@ -58,7 +58,7 @@ func runStreaming(agentMode bool) {
 
 	req.Header.Set("Accept", "text/event-stream")
 	req.Header.Set("Authorization", "Bearer "+session.GetToken())
-	req.Header.Set("User-Agent", "msh-cli/1.0")
+	req.Header.Set("User-Agent", "mesh-cli/1.0")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -212,7 +212,7 @@ func renderDMReceivedEvent(out *output.Printer, event map[string]interface{}, ti
 	sender, _ := event["sender"].(map[string]interface{})
 	senderHandle, _ := sender["handle"].(string)
 	out.Printf("💬 [%s] New DM from @%s\n", timestamp, senderHandle)
-	out.Printf("   [Encrypted - use 'msh dm ls' to read]\n")
+	out.Printf("   [Encrypted - use 'mesh dm ls' to read]\n")
 }
 
 func renderMentionEvent(out *output.Printer, event map[string]interface{}, timestamp string) {

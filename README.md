@@ -18,16 +18,16 @@ npm install -g @mndrk/mesh
 
 ```bash
 # Login with SSH key
-msh login
+mesh login
 
 # Post something
-msh post "Hello, Mesh!"
+mesh post "Hello, Mesh!"
 
 # View your feed
-msh feed
+mesh feed
 
 # Follow someone
-msh follow @alice
+mesh follow @alice
 ```
 
 See [joinme.sh](https://joinme.sh) for full documentation.
@@ -58,7 +58,7 @@ make run
 
 | Command | Description |
 |---------|-------------|
-| `make build` | Build binary to `bin/msh` |
+| `make build` | Build binary to `bin/mesh` |
 | `make run` | Run from source |
 | `make test` | Run tests |
 | `make test-cover` | Run tests with coverage |
@@ -70,7 +70,7 @@ make run
 
 ```
 mesh-cli/
-├── cmd/msh/        # CLI entry point
+├── cmd/mesh/        # CLI entry point
 ├── pkg/
 │   ├── api/        # Request/response types
 │   ├── client/     # Backend API client
@@ -85,7 +85,7 @@ mesh-cli/
 export MSH_API_URL=http://localhost:8080
 
 # Or use config
-msh config set api_url http://localhost:8080
+mesh config set api_url http://localhost:8080
 ```
 
 ## License

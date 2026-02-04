@@ -3,7 +3,7 @@ set -e
 
 # Configuration
 API_URL="${MSH_API_URL:-http://localhost:8080}"
-CLI_BIN="${MSH_CLI_BIN:-./bin/msh}"
+CLI_BIN="${MSH_CLI_BIN:-./bin/mesh}"
 TEST_DIR=$(mktemp -d)
 TEST_HANDLE="e2e_test_$(date +%s)"
 SSH_KEY="$TEST_DIR/id_ed25519"
@@ -55,10 +55,10 @@ log "Logging in as $TEST_HANDLE..."
 # We need to simulate the login flow. 
 # Since we can't easily interact with the challenge signing automatically without the CLI supporting it gracefully,
 # we rely on the CLI's login command supporting a non-interactive flow if possible, or we manually hit the API.
-# Looking at the docs, `msh login` might be interactive.
+# Looking at the docs, `mesh login` might be interactive.
 # However, for E2E, we might need to register first if the user doesn't exist.
 # Let's try to register/login.
-# If `msh login` requires interaction, we might need a workaround.
+# If `mesh login` requires interaction, we might need a workaround.
 # BUT, looking at `cli_smoke_test.go`, it uses a token.
 # To get a token without interaction, we need to sign the challenge.
 
@@ -93,8 +93,8 @@ fi
 log "Got token: ${TOKEN:0:10}..."
 
 # 4. Save to config
-# We can use `msh config set` or write the file directly.
-# Let's use `msh login --token` if available (saw it in smoke tests).
+# We can use `mesh config set` or write the file directly.
+# Let's use `mesh login --token` if available (saw it in smoke tests).
 $CLI_BIN login --token "$TOKEN" > /dev/null
 
 # 3. Execution

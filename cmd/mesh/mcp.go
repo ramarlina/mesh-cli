@@ -54,7 +54,7 @@ Example MCP configuration (claude_desktop_config.json):
   {
     "mcpServers": {
       "mesh": {
-        "command": "msh",
+        "command": "mesh",
         "args": ["mcp"],
         "env": {
           "MSH_TOKEN": "your-api-token"

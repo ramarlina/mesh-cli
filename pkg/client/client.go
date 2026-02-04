@@ -86,7 +86,7 @@ func (c *Client) doRequest(method, path string, body, result interface{}) error 
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "msh-cli/1.0")
+	req.Header.Set("User-Agent", "mesh-cli/1.0")
 
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)

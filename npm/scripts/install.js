@@ -87,15 +87,15 @@ async function main() {
   }
 
   const binDir = path.join(__dirname, "..", "bin");
-  const binPath = path.join(binDir, process.platform === "win32" ? "msh.exe" : "msh");
+  const binPath = path.join(binDir, process.platform === "win32" ? "mesh.exe" : "mesh");
 
   // Skip if binary already exists and is non-empty (for CI caching)
   if (fs.existsSync(binPath) && fs.statSync(binPath).size > 0) {
-    console.log("msh binary already exists, skipping download");
+    console.log("mesh binary already exists, skipping download");
     return;
   }
 
-  console.log("Installing msh...");
+  console.log("Installing mesh...");
 
   try {
     const version = VERSION === "latest" ? await getLatestVersion() : VERSION;
@@ -104,7 +104,7 @@ async function main() {
     }
 
     const ext = platform === "windows" ? "zip" : "tar.gz";
-    const filename = `msh_${version.replace("v", "")}_${platform}_${arch}.${ext}`;
+    const filename = `mesh_${version.replace("v", "")}_${platform}_${arch}.${ext}`;
     const url = `https://github.com/${REPO}/releases/download/${version}/${filename}`;
 
     const tmpDir = path.join(__dirname, "..", ".tmp");
@@ -120,7 +120,7 @@ async function main() {
     await extract(archivePath, binPath);
 
     // Move binary to bin directory
-    const extractedBin = path.join(tmpDir, process.platform === "win32" ? "msh.exe" : "msh");
+    const extractedBin = path.join(tmpDir, process.platform === "win32" ? "mesh.exe" : "mesh");
     if (fs.existsSync(extractedBin)) {
       fs.renameSync(extractedBin, binPath);
     }
@@ -133,9 +133,9 @@ async function main() {
     // Cleanup
     fs.rmSync(tmpDir, { recursive: true, force: true });
 
-    console.log("msh installed successfully!");
+    console.log("mesh installed successfully!");
   } catch (err) {
-    console.error("Failed to install msh:", err.message);
+    console.error("Failed to install mesh:", err.message);
     process.exit(1);
   }
 }

@@ -186,7 +186,7 @@ func runDoctorHuman(out *output.Printer) {
 			out.Printf("  ✓ Authenticated as: @%s (%s)\n", user.Handle, user.Name)
 		}
 	} else {
-		out.Printf("  ✗ Not authenticated (run 'msh login')\n")
+		out.Printf("  ✗ Not authenticated (run 'mesh login')\n")
 	}
 	out.Println()
 

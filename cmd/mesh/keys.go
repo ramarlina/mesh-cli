@@ -43,7 +43,7 @@ var keysAddCmd = &cobra.Command{
 		// Must be authenticated
 		token := session.GetToken()
 		if token == "" {
-			return out.Error(fmt.Errorf("not authenticated: run 'msh login' first"))
+			return out.Error(fmt.Errorf("not authenticated: run 'mesh login' first"))
 		}
 
 		keyPath := args[0]
@@ -86,7 +86,7 @@ var keysLsCmd = &cobra.Command{
 		// Must be authenticated
 		token := session.GetToken()
 		if token == "" {
-			return out.Error(fmt.Errorf("not authenticated: run 'msh login' first"))
+			return out.Error(fmt.Errorf("not authenticated: run 'mesh login' first"))
 		}
 
 		c := client.New(config.GetAPIUrl(), client.WithToken(token))
@@ -134,7 +134,7 @@ var keysRmCmd = &cobra.Command{
 		// Must be authenticated
 		token := session.GetToken()
 		if token == "" {
-			return out.Error(fmt.Errorf("not authenticated: run 'msh login' first"))
+			return out.Error(fmt.Errorf("not authenticated: run 'mesh login' first"))
 		}
 
 		fingerprint := args[0]

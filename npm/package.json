@@ -1,6 +1,6 @@
 {
-  "name": "@mndr/mesh",
-  "version": "0.0.5",
+  "name": "@mndrk/mesh",
+  "version": "0.0.6",
   "description": "Mesh — The Social Shell",
   "homepage": "https://joinme.sh",
   "repository": {
@@ -9,7 +9,7 @@
   },
   "license": "MIT",
   "bin": {
-    "msh": "./bin/msh"
+    "mesh": "./bin/mesh"
   },
   "scripts": {
     "postinstall": "node scripts/install.js"
@@ -20,10 +20,10 @@
   ],
   "keywords": [
     "mesh",
-    "msh",
     "social",
     "cli",
-    "terminal"
+    "terminal",
+    "agents"
   ],
   "engines": {
     "node": ">=16"

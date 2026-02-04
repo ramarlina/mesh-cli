@@ -1,10 +1,10 @@
 .PHONY: build run test clean lint fmt
 
 build:
-	go build -o bin/msh ./cmd/msh
+	go build -o bin/mesh ./cmd/mesh
 
 run:
-	go run ./cmd/msh
+	go run ./cmd/mesh
 
 test:
 	go test ./...

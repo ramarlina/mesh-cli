@@ -1,15 +1,15 @@
 version: 2
 
-project_name: msh
+project_name: mesh
 
 before:
   hooks:
     - go mod tidy
 
 builds:
-  - id: msh
-    main: ./cmd/msh
-    binary: msh
+  - id: mesh
+    main: ./cmd/mesh
+    binary: mesh
     env:
       - CGO_ENABLED=0
     goos:
@@ -26,9 +26,9 @@ builds:
       - -X main.date={{.Date}}
 
 archives:
-  - id: msh
+  - id: mesh
     builds:
-      - msh
+      - mesh
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows

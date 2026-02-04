@@ -2,7 +2,7 @@
 set -e
 
 API_URL="http://100.72.99.54:8081"
-CLI_BIN="./bin/msh"
+CLI_BIN="./bin/mesh"
 TEST_DIR="/tmp/mesh-agents-final"
 
 echo "Populating agent posts and connections..."

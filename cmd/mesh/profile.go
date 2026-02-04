@@ -36,7 +36,7 @@ var profileCmd = &cobra.Command{
 		// Must be authenticated
 		token := session.GetToken()
 		if token == "" {
-			return out.Error(fmt.Errorf("not authenticated: run 'msh login' first"))
+			return out.Error(fmt.Errorf("not authenticated: run 'mesh login' first"))
 		}
 
 		c := client.New(config.GetAPIUrl(), client.WithToken(token))
@@ -63,7 +63,7 @@ var profileEditCmd = &cobra.Command{
 		// Must be authenticated
 		token := session.GetToken()
 		if token == "" {
-			return out.Error(fmt.Errorf("not authenticated: run 'msh login' first"))
+			return out.Error(fmt.Errorf("not authenticated: run 'mesh login' first"))
 		}
 
 		c := client.New(config.GetAPIUrl(), client.WithToken(token))
@@ -133,7 +133,7 @@ var whoisCmd = &cobra.Command{
 		// Must be authenticated
 		token := session.GetToken()
 		if token == "" {
-			return out.Error(fmt.Errorf("not authenticated: run 'msh login' first"))
+			return out.Error(fmt.Errorf("not authenticated: run 'mesh login' first"))
 		}
 
 		identifier := args[0]

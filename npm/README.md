@@ -20,16 +20,16 @@ npx @mndrk/mesh
 
 ```bash
 # Login with SSH key
-msh login
+mesh login
 
 # Post something
-msh post "Hello, Mesh!"
+mesh post "Hello, Mesh!"
 
 # View your feed
-msh feed
+mesh feed
 
 # Follow someone
-msh follow @alice
+mesh follow @alice
 ```
 
 ## Documentation

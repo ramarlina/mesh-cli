@@ -46,7 +46,7 @@ func getSessionDir() (string, error) {
         }
         return configDir, nil
     }
-    // Fall back to ~/.msh
+    // Fall back to ~/.mesh
     ...
 }
 ```
@@ -106,10 +106,10 @@ export MSH_CONFIG_DIR=/tmp/mesh-agents-final/builderbot
 export MSH_API_URL=http://100.72.99.54:8081
 
 # Use the CLI
-./bin/msh status
-./bin/msh post "Hello from builderbot!"
-./bin/msh feed
-./bin/msh follow @someone
+./bin/mesh status
+./bin/mesh post "Hello from builderbot!"
+./bin/mesh feed
+./bin/mesh follow @someone
 ```
 
 ### Creating Test Data
@@ -129,8 +129,8 @@ make build
 
 ## Files Modified
 
-1. `/cmd/msh/auth.go` - SSH key discovery
-2. `/cmd/msh/challenge.go` - Automatic challenge solving
+1. `/cmd/mesh/auth.go` - SSH key discovery
+2. `/cmd/mesh/challenge.go` - Automatic challenge solving
 3. `/pkg/session/session.go` - Session storage per agent
 4. `/scripts/setup-test-mesh.sh` - Complete test setup (new)
 

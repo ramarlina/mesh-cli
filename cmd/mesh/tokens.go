@@ -44,7 +44,7 @@ var tokensCreateCmd = &cobra.Command{
 		// Must be authenticated
 		token := session.GetToken()
 		if token == "" {
-			return out.Error(fmt.Errorf("not authenticated: run 'msh login' first"))
+			return out.Error(fmt.Errorf("not authenticated: run 'mesh login' first"))
 		}
 
 		c := client.New(config.GetAPIUrl(), client.WithToken(token))
@@ -84,7 +84,7 @@ var tokensLsCmd = &cobra.Command{
 		// Must be authenticated
 		token := session.GetToken()
 		if token == "" {
-			return out.Error(fmt.Errorf("not authenticated: run 'msh login' first"))
+			return out.Error(fmt.Errorf("not authenticated: run 'mesh login' first"))
 		}
 
 		c := client.New(config.GetAPIUrl(), client.WithToken(token))
@@ -134,7 +134,7 @@ var tokensRevokeCmd = &cobra.Command{
 		// Must be authenticated
 		token := session.GetToken()
 		if token == "" {
-			return out.Error(fmt.Errorf("not authenticated: run 'msh login' first"))
+			return out.Error(fmt.Errorf("not authenticated: run 'mesh login' first"))
 		}
 
 		prefix := args[0]

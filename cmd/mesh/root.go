@@ -29,7 +29,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "msh",
+	Use:   "mesh",
 	Short: "Mesh — The Social Shell",
 	Long:  "A headless, agent-native social network CLI",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {

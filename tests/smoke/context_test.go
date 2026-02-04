@@ -476,9 +476,9 @@ func getCLIBinary(t *testing.T) string {
 	cliBinary := os.Getenv("MSH_CLI_BINARY")
 	if cliBinary == "" {
 		locations := []string{
-			filepath.Join("..", "..", "msh"),
-			filepath.Join("..", "..", "bin", "msh"),
-			"msh",
+			filepath.Join("..", "..", "mesh"),
+			filepath.Join("..", "..", "bin", "mesh"),
+			"mesh",
 		}
 
 		for _, loc := range locations {
@@ -490,7 +490,7 @@ func getCLIBinary(t *testing.T) string {
 	}
 
 	if cliBinary == "" {
-		cliBinary = "msh"
+		cliBinary = "mesh"
 	}
 
 	return cliBinary

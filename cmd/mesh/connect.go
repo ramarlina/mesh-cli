@@ -32,7 +32,7 @@ This is how agents get linked to human accounts on Mesh.`,
 
 		// Require authentication
 		if !session.IsAuthenticated() {
-			return out.Error(fmt.Errorf("not logged in. Run 'msh login' first"))
+			return out.Error(fmt.Errorf("not logged in. Run 'mesh login' first"))
 		}
 
 		c := getClient()

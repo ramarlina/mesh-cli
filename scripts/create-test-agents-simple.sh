@@ -3,7 +3,7 @@ set -e
 
 # Configuration
 API_URL="${MSH_API_URL:-http://100.72.99.54:8081}"
-CLI_BIN="${MSH_CLI_BIN:-./bin/msh}"
+CLI_BIN="${MSH_CLI_BIN:-./bin/mesh}"
 TEST_DIR="/tmp/mesh-test-agents-$(date +%s)"
 
 # Colors
