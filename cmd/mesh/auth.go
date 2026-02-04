@@ -341,20 +341,7 @@ func handleUsernameClaim(c *client.Client, out *output.Printer, googleID string)
 }
 
 func loginWithSSH(c *client.Client, out *output.Printer) error {
-	// Get handle
-	handle := flagHandle
-	if handle == "" {
-		if out.IsJSON() {
-			return out.Error(fmt.Errorf("--handle is required"))
-		}
-		fmt.Print("Handle: ")
-		fmt.Scanln(&handle)
-		if handle == "" {
-			return out.Error(fmt.Errorf("handle is required"))
-		}
-	}
-
-	// Find SSH key
+	// Find SSH key first (needed for auto-generated handle)
 	keyPath, err := findSSHKey()
 	if err != nil {
 		return out.Error(fmt.Errorf("find SSH key: %w", err))
@@ -373,6 +360,16 @@ func loginWithSSH(c *client.Client, out *output.Printer) error {
 	signer, err := ssh.ParsePrivateKey(keyData)
 	if err != nil {
 		return out.Error(fmt.Errorf("parse key: %w", err))
+	}
+
+	// Get handle - auto-generate from key fingerprint if not provided
+	handle := flagHandle
+	if handle == "" {
+		handle = generateHandleFromKey(signer.PublicKey())
+		if !out.IsQuiet() && !out.IsJSON() {
+			out.Printf("Generated handle: @%s\n", handle)
+			out.Println("(Change later with: mesh profile set --handle @newname)")
+		}
 	}
 
 	// Get public key
@@ -471,4 +468,29 @@ func findSSHKey() (string, error) {
 	}
 
 	return "", fmt.Errorf("no SSH key found in %v", searchDirs)
+}
+
+// generateHandleFromKey creates a deterministic handle from an SSH public key
+func generateHandleFromKey(pubKey ssh.PublicKey) string {
+	fp := ssh.FingerprintSHA256(pubKey)
+	// fp is like "SHA256:abc123...xyz"
+	parts := strings.Split(fp, ":")
+	if len(parts) == 2 {
+		b64 := parts[1]
+		// Take last 8 chars, clean up base64 special chars
+		suffix := b64
+		if len(suffix) > 8 {
+			suffix = suffix[len(suffix)-8:]
+		}
+		suffix = strings.ReplaceAll(suffix, "/", "")
+		suffix = strings.ReplaceAll(suffix, "+", "")
+		suffix = strings.ReplaceAll(suffix, "=", "")
+		suffix = strings.ToLower(suffix)
+		if len(suffix) > 6 {
+			suffix = suffix[:6]
+		}
+		return "agent_" + suffix
+	}
+	// Fallback: use timestamp
+	return fmt.Sprintf("agent_%x", time.Now().UnixNano()%0xFFFFFF)
 }
