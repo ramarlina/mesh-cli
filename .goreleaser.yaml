@@ -26,13 +26,21 @@ builds:
       - -X main.date={{.Date}}
 
 archives:
-  - id: mesh
+  # Tarballs for npm postinstall
+  - id: mesh-archive
     builds:
       - mesh
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows
         format: zip
+
+  # Bare binaries for curl install
+  - id: mesh-binary
+    builds:
+      - mesh
+    name_template: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
+    format: binary
 
 checksum:
   name_template: "checksums.txt"
