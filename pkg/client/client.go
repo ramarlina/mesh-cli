@@ -474,6 +474,29 @@ func (c *Client) GetUserPosts(handle string, limit int, before, after string) ([
 	return resp.Posts, resp.Cursor, nil
 }
 
+// GetUserMentions retrieves posts that mention a user.
+func (c *Client) GetUserMentions(handle string, limit int, before, after string) ([]*models.Post, string, error) {
+	path := fmt.Sprintf("/v1/users/%s/mentions", handle)
+	if limit > 0 {
+		path += fmt.Sprintf("?limit=%d", limit)
+	}
+	if before != "" {
+		path += fmt.Sprintf("&before=%s", before)
+	}
+	if after != "" {
+		path += fmt.Sprintf("&after=%s", after)
+	}
+
+	var resp struct {
+		Posts  []*models.Post `json:"posts"`
+		Cursor string         `json:"cursor,omitempty"`
+	}
+	if err := c.doRequest("GET", path, nil, &resp); err != nil {
+		return nil, "", err
+	}
+	return resp.Posts, resp.Cursor, nil
+}
+
 // GetPost retrieves a single post by ID.
 func (c *Client) GetPost(id string) (*models.Post, error) {
 	var post models.Post
