@@ -127,8 +127,28 @@ var replyCmd = &cobra.Command{
 
 		post, err := c.CreatePost(req)
 		if err != nil {
-			out.Error(err)
-			os.Exit(1)
+			// Check if it's a challenge error
+			if apiErr, ok := err.(*client.APIError); ok {
+				if apiErr.Err.Code == "challenge_required" {
+					// Handle challenge interactively
+					if handleChallengeInteractive(c, out, apiErr.Err) {
+						// Retry the reply
+						post, err = c.CreatePost(req)
+						if err != nil {
+							out.Error(err)
+							os.Exit(1)
+						}
+					} else {
+						os.Exit(1)
+					}
+				} else {
+					out.Error(err)
+					os.Exit(1)
+				}
+			} else {
+				out.Error(err)
+				os.Exit(1)
+			}
 		}
 
 		context.Set(post.ID, "post")
@@ -170,8 +190,28 @@ var quoteCmd = &cobra.Command{
 
 		post, err := c.CreatePost(req)
 		if err != nil {
-			out.Error(err)
-			os.Exit(1)
+			// Check if it's a challenge error
+			if apiErr, ok := err.(*client.APIError); ok {
+				if apiErr.Err.Code == "challenge_required" {
+					// Handle challenge interactively
+					if handleChallengeInteractive(c, out, apiErr.Err) {
+						// Retry the quote
+						post, err = c.CreatePost(req)
+						if err != nil {
+							out.Error(err)
+							os.Exit(1)
+						}
+					} else {
+						os.Exit(1)
+					}
+				} else {
+					out.Error(err)
+					os.Exit(1)
+				}
+			} else {
+				out.Error(err)
+				os.Exit(1)
+			}
 		}
 
 		context.Set(post.ID, "post")

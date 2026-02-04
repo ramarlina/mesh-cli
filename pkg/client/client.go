@@ -18,6 +18,7 @@ type Client struct {
 	baseURL    string
 	httpClient *http.Client
 	token      string
+	poiToken   string // Proof-of-Intelligence token for post creation
 }
 
 // Option configures the client.
@@ -51,6 +52,22 @@ func WithHTTPClient(hc *http.Client) Option {
 	}
 }
 
+// SetPOIToken sets the POI token for authenticated requests that require it.
+func (c *Client) SetPOIToken(token string) {
+	c.poiToken = token
+}
+
+// Health checks if the API server is reachable.
+func (c *Client) Health() error {
+	var resp struct {
+		Status string `json:"status"`
+	}
+	if err := c.doRequest("GET", "/health", nil, &resp); err != nil {
+		return err
+	}
+	return nil
+}
+
 // doRequest executes an HTTP request and parses the response.
 func (c *Client) doRequest(method, path string, body, result interface{}) error {
 	var bodyReader io.Reader
@@ -75,6 +92,10 @@ func (c *Client) doRequest(method, path string, body, result interface{}) error 
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
 
+	if c.poiToken != "" {
+		req.Header.Set("X-Poi-Token", c.poiToken)
+	}
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("execute request: %w", err)
@@ -86,21 +107,33 @@ func (c *Client) doRequest(method, path string, body, result interface{}) error 
 		return fmt.Errorf("read response: %w", err)
 	}
 
-	// Try to parse as API response
-	var apiResp api.Response[json.RawMessage]
-	if err := json.Unmarshal(respData, &apiResp); err != nil {
-		return fmt.Errorf("parse response: %w", err)
-	}
-
-	if !apiResp.OK {
-		if apiResp.Error != nil {
-			return &APIError{Err: apiResp.Error}
+	// Check for error responses
+	if resp.StatusCode >= 400 {
+		var errResp struct {
+			Error     string                 `json:"error"`
+			Reason    string                 `json:"reason,omitempty"`
+			Challenge map[string]interface{} `json:"challenge,omitempty"`
 		}
-		return fmt.Errorf("request failed with status %d", resp.StatusCode)
+		if err := json.Unmarshal(respData, &errResp); err == nil && errResp.Error != "" {
+			apiErr := &api.Error{
+				Code:    errResp.Error, // Use error string as code
+				Message: errResp.Error,
+			}
+			// Include challenge details if present
+			if errResp.Challenge != nil {
+				apiErr.Details = map[string]any{
+					"reason":    errResp.Reason,
+					"challenge": errResp.Challenge,
+				}
+			}
+			return &APIError{Err: apiErr}
+		}
+		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(respData))
 	}
 
-	if result != nil && len(apiResp.Result) > 0 {
-		if err := json.Unmarshal(apiResp.Result, result); err != nil {
+	// Parse successful response directly
+	if result != nil && len(respData) > 0 {
+		if err := json.Unmarshal(respData, result); err != nil {
 			return fmt.Errorf("unmarshal result: %w", err)
 		}
 	}
@@ -117,8 +150,14 @@ func (e *APIError) Error() string {
 	return e.Err.Message
 }
 
-// LoginRequest represents a login request.
+// ChallengeRequest represents a challenge request.
+type ChallengeRequest struct {
+	Handle string `json:"handle"`
+}
+
+// LoginRequest represents a login request (verify).
 type LoginRequest struct {
+	Handle    string `json:"handle"`
 	Challenge string `json:"challenge"`
 	Signature string `json:"signature"`
 	PublicKey string `json:"public_key"`
@@ -126,25 +165,104 @@ type LoginRequest struct {
 
 // LoginResponse represents a login response.
 type LoginResponse struct {
-	Token string       `json:"token"`
-	User  *models.User `json:"user"`
+	AccessToken  string       `json:"access_token"`
+	RefreshToken string       `json:"refresh_token"`
+	ExpiresIn    int          `json:"expires_in"`
+	User         *models.User `json:"user"`
+	IsNewUser    bool         `json:"is_new_user,omitempty"`
 }
 
-// Login authenticates using SSH key signing.
+// Token returns the access token for backward compatibility.
+func (r *LoginResponse) Token() string {
+	return r.AccessToken
+}
+
+// GoogleAuthURLResponse represents the response from getting Google auth URL.
+type GoogleAuthURLResponse struct {
+	AuthURL string `json:"auth_url"`
+}
+
+// GoogleCallbackResponse represents the response from Google OAuth callback.
+type GoogleCallbackResponse struct {
+	AccessToken  string       `json:"access_token,omitempty"`
+	RefreshToken string       `json:"refresh_token,omitempty"`
+	ExpiresIn    int          `json:"expires_in,omitempty"`
+	User         *models.User `json:"user,omitempty"`
+	IsNewUser    bool         `json:"is_new_user,omitempty"`
+	Status       string       `json:"status,omitempty"`
+	Message      string       `json:"message,omitempty"`
+	ClaimURL     string       `json:"claim_url,omitempty"`
+	GoogleID     string       `json:"google_id,omitempty"`
+}
+
+// ClaimUsernameRequest represents a request to claim a username after OAuth.
+type ClaimUsernameRequest struct {
+	GoogleID string `json:"google_id"`
+	Handle   string `json:"handle"`
+}
+
+// GetGoogleAuthURL gets the Google OAuth authorization URL.
+func (c *Client) GetGoogleAuthURL(redirectURI string) (*GoogleAuthURLResponse, error) {
+	path := "/v1/auth/google"
+	if redirectURI != "" {
+		path += "?redirect_uri=" + redirectURI
+	}
+
+	req, err := http.NewRequest("GET", c.baseURL+path, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var result GoogleAuthURLResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// ExchangeGoogleCode exchanges an OAuth code for tokens.
+func (c *Client) ExchangeGoogleCode(code, state string) (*GoogleCallbackResponse, error) {
+	path := fmt.Sprintf("/v1/auth/google/callback?code=%s&state=%s", code, state)
+	var result GoogleCallbackResponse
+	if err := c.doRequest("GET", path, nil, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// ClaimUsername claims a username for a new Google OAuth user.
+func (c *Client) ClaimUsername(req *ClaimUsernameRequest) (*LoginResponse, error) {
+	var result LoginResponse
+	if err := c.doRequest("POST", "/v1/auth/google/claim", req, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// Login authenticates using SSH key signing (calls /v1/auth/verify).
 func (c *Client) Login(req *LoginRequest) (*LoginResponse, error) {
 	var resp LoginResponse
-	if err := c.doRequest("POST", "/v1/auth/login", req, &resp); err != nil {
+	if err := c.doRequest("POST", "/v1/auth/verify", req, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
 }
 
-// GetChallenge requests an authentication challenge.
-func (c *Client) GetChallenge() (string, error) {
+// GetChallenge requests an authentication challenge for a handle.
+func (c *Client) GetChallenge(handle string) (string, error) {
 	var resp struct {
 		Challenge string `json:"challenge"`
+		ExpiresIn int    `json:"expires_in"`
 	}
-	if err := c.doRequest("GET", "/v1/auth/challenge", nil, &resp); err != nil {
+	if err := c.doRequest("POST", "/v1/auth/challenge", &ChallengeRequest{Handle: handle}, &resp); err != nil {
 		return "", err
 	}
 	return resp.Challenge, nil
@@ -292,7 +410,7 @@ type FeedRequest struct {
 
 // GetFeed retrieves the user's feed.
 func (c *Client) GetFeed(req *FeedRequest) ([]*models.Post, string, error) {
-	path := fmt.Sprintf("/v1/feed?mode=%s", req.Mode)
+	path := fmt.Sprintf("/v1/feed?type=%s", req.Mode)
 	if req.Limit > 0 {
 		path += fmt.Sprintf("&limit=%d", req.Limit)
 	}
@@ -310,13 +428,13 @@ func (c *Client) GetFeed(req *FeedRequest) ([]*models.Post, string, error) {
 	}
 
 	var resp struct {
-		Posts  []*models.Post `json:"posts"`
-		Cursor string         `json:"cursor,omitempty"`
+		Posts []*models.Post `json:"posts"`
+		Next  string         `json:"next,omitempty"`
 	}
 	if err := c.doRequest("GET", path, nil, &resp); err != nil {
 		return nil, "", err
 	}
-	return resp.Posts, resp.Cursor, nil
+	return resp.Posts, resp.Next, nil
 }
 
 // GetCatchup retrieves high-signal posts since a time.
@@ -365,13 +483,19 @@ func (c *Client) GetPost(id string) (*models.Post, error) {
 	return &post, nil
 }
 
+// ThreadResponse represents a thread with the main post and replies.
+type ThreadResponse struct {
+	Post    *models.Post   `json:"post"`
+	Replies []*models.Post `json:"replies"`
+}
+
 // GetThread retrieves a thread for a post.
-func (c *Client) GetThread(id string) ([]*models.Post, error) {
-	var posts []*models.Post
-	if err := c.doRequest("GET", fmt.Sprintf("/v1/posts/%s/thread", id), nil, &posts); err != nil {
+func (c *Client) GetThread(id string) (*ThreadResponse, error) {
+	var resp ThreadResponse
+	if err := c.doRequest("GET", fmt.Sprintf("/v1/posts/%s/thread", id), nil, &resp); err != nil {
 		return nil, err
 	}
-	return posts, nil
+	return &resp, nil
 }
 
 // SearchRequest represents parameters for search.
@@ -615,6 +739,29 @@ func (c *Client) ListChallenges() ([]*Challenge, error) {
 // SolveRequest represents a challenge solution.
 type SolveRequest struct {
 	Answer string `json:"answer"`
+}
+
+// VerifyResponse represents the response from verifying a challenge.
+type VerifyResponse struct {
+	Valid          bool      `json:"valid"`
+	Token          string    `json:"token,omitempty"`
+	TokenExpiresAt time.Time `json:"token_expires_at,omitempty"`
+}
+
+// VerifyChallenge verifies a challenge answer and returns a POI token.
+func (c *Client) VerifyChallenge(challengeID int64, answer string) (*VerifyResponse, error) {
+	var resp VerifyResponse
+	req := struct {
+		ChallengeID int64  `json:"challenge_id"`
+		Answer      string `json:"answer"`
+	}{
+		ChallengeID: challengeID,
+		Answer:      answer,
+	}
+	if err := c.doRequest("POST", "/v1/challenges/verify", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 // SolveChallenge solves a challenge.

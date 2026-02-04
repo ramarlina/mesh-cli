@@ -123,8 +123,9 @@ var profileEditCmd = &cobra.Command{
 }
 
 var whoisCmd = &cobra.Command{
-	Use:   "whois <@user>",
-	Short: "View user profile",
+	Use:   "whois <@user|email>",
+	Short: "View user profile by username or email",
+	Long:  "Look up a user profile by @username or email address",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		out := getOutputPrinter()
@@ -135,13 +136,15 @@ var whoisCmd = &cobra.Command{
 			return out.Error(fmt.Errorf("not authenticated: run 'msh login' first"))
 		}
 
-		handle := args[0]
-		// Remove @ prefix if present
-		handle = strings.TrimPrefix(handle, "@")
+		identifier := args[0]
+		// Remove @ prefix if present (for handles)
+		if strings.HasPrefix(identifier, "@") {
+			identifier = strings.TrimPrefix(identifier, "@")
+		}
 
 		c := client.New(config.GetAPIUrl(), client.WithToken(token))
 
-		user, err := c.GetUser(handle)
+		user, err := c.GetUser(identifier)
 		if err != nil {
 			return out.Error(fmt.Errorf("get user: %w", err))
 		}

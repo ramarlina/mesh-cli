@@ -4,7 +4,6 @@ package smoke
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -115,7 +114,7 @@ func TestCLIBasicCommands(t *testing.T) {
 	})
 
 	t.Run("Version_ShouldDisplayVersion", func(t *testing.T) {
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"--version"})
+		_, stderr, exitCode := cfg.runCLI(t, []string{"--version"})
 
 		// Version command may not exist, so we check for the flag
 		if exitCode != 0 && strings.Contains(stderr, "unknown flag") {
@@ -298,7 +297,7 @@ func TestCLIPostCommands(t *testing.T) {
 	})
 
 	t.Run("Feed_ShouldShowFeed", func(t *testing.T) {
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"feed"},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"feed"},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -322,7 +321,7 @@ func TestCLIFeedCommands(t *testing.T) {
 		fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 	t.Run("Feed_ShouldAcceptLimit", func(t *testing.T) {
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"feed", "--limit", "5"},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"feed", "--limit", "5"},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -332,7 +331,7 @@ func TestCLIFeedCommands(t *testing.T) {
 
 	t.Run("Feed_ShouldAcceptSince", func(t *testing.T) {
 		sinceTime := time.Now().Add(-24 * time.Hour).Format(time.RFC3339)
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"feed", "--since", sinceTime},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"feed", "--since", sinceTime},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -362,7 +361,7 @@ func TestCLIGraphCommands(t *testing.T) {
 			t.Skip("MSH_TEST_FOLLOW_TARGET not set, skipping follow test")
 		}
 
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"follow", targetHandle},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"follow", targetHandle},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -376,7 +375,7 @@ func TestCLIGraphCommands(t *testing.T) {
 			t.Skip("MSH_TEST_FOLLOW_TARGET not set, skipping unfollow test")
 		}
 
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"unfollow", targetHandle},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"unfollow", targetHandle},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -416,7 +415,7 @@ func TestCLIInboxCommands(t *testing.T) {
 		fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 	t.Run("Inbox_ShouldShowNotifications", func(t *testing.T) {
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"inbox"},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"inbox"},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -440,7 +439,7 @@ func TestCLIProfileCommands(t *testing.T) {
 		fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 	t.Run("Me_ShouldShowProfile", func(t *testing.T) {
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"me"},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"me"},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -455,7 +454,7 @@ func TestCLIConfigCommands(t *testing.T) {
 	tempDir := t.TempDir()
 
 	t.Run("Config_ShouldListSettings", func(t *testing.T) {
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"config"},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"config"},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -464,7 +463,7 @@ func TestCLIConfigCommands(t *testing.T) {
 	})
 
 	t.Run("Config_ShouldGetSetting", func(t *testing.T) {
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"config", "get", "editor"},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"config", "get", "editor"},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -473,7 +472,7 @@ func TestCLIConfigCommands(t *testing.T) {
 	})
 
 	t.Run("Config_ShouldSetSetting", func(t *testing.T) {
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"config", "set", "editor", "nano"},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"config", "set", "editor", "nano"},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -481,7 +480,7 @@ func TestCLIConfigCommands(t *testing.T) {
 		}
 
 		// Verify the setting
-		stdout, _, _ = cfg.runCLI(t, []string{"config", "get", "editor"},
+		stdout, _, _ := cfg.runCLI(t, []string{"config", "get", "editor"},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if !strings.Contains(stdout, "nano") {
@@ -510,7 +509,7 @@ func TestCLISignalsCommands(t *testing.T) {
 			t.Skip("MSH_TEST_POST_ID not set, skipping like test")
 		}
 
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"like", postID},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"like", postID},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -524,7 +523,7 @@ func TestCLISignalsCommands(t *testing.T) {
 			t.Skip("MSH_TEST_POST_ID not set, skipping unlike test")
 		}
 
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"unlike", postID},
+		_, stderr, exitCode := cfg.runCLI(t, []string{"unlike", postID},
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		if exitCode != 0 {
@@ -645,7 +644,7 @@ func TestCLICrossPlatform(t *testing.T) {
 		cfg := NewSmokeTestConfig(t)
 
 		// Basic command to verify the binary works
-		stdout, stderr, exitCode := cfg.runCLI(t, []string{"--help"})
+		_, stderr, exitCode := cfg.runCLI(t, []string{"--help"})
 
 		if exitCode != 0 {
 			t.Errorf("CLI binary failed on %s/%s. Stderr: %s",

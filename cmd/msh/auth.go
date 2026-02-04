@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
+	"encoding/base64"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/ramarlina/mesh-cli/pkg/client"
@@ -15,7 +20,9 @@ import (
 )
 
 var (
-	flagToken string
+	flagToken  string
+	flagHandle string
+	flagGoogle bool
 )
 
 func init() {
@@ -24,12 +31,14 @@ func init() {
 	rootCmd.AddCommand(statusCmd)
 
 	loginCmd.Flags().StringVar(&flagToken, "token", "", "Login with API token")
+	loginCmd.Flags().StringVarP(&flagHandle, "handle", "u", "", "Your handle/username")
+	loginCmd.Flags().BoolVar(&flagGoogle, "google", false, "Login with Google/Gmail OAuth")
 }
 
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Authenticate with Mesh",
-	Long:  "Authenticate using SSH key signing or API token",
+	Long:  "Authenticate using Google OAuth, SSH key signing, or API token",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		out := getOutputPrinter()
 
@@ -58,6 +67,11 @@ var loginCmd = &cobra.Command{
 		// Token-based login
 		if flagToken != "" {
 			return loginWithToken(c, out, flagToken)
+		}
+
+		// Google OAuth login
+		if flagGoogle {
+			return loginWithGoogle(c, out)
 		}
 
 		// SSH key signing login
@@ -157,7 +171,189 @@ func loginWithToken(c *client.Client, out *output.Printer, token string) error {
 	return nil
 }
 
+func loginWithGoogle(c *client.Client, out *output.Printer) error {
+	if !out.IsQuiet() && !out.IsJSON() {
+		out.Println("Initiating Google OAuth login...")
+	}
+
+	// Start a local HTTP server to receive the callback
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return out.Error(fmt.Errorf("start callback server: %w", err))
+	}
+	defer listener.Close()
+
+	port := listener.Addr().(*net.TCPAddr).Port
+	callbackURL := fmt.Sprintf("http://127.0.0.1:%d/callback", port)
+
+	// Get the authorization URL
+	authResp, err := c.GetGoogleAuthURL(callbackURL)
+	if err != nil {
+		return out.Error(fmt.Errorf("get auth URL: %w", err))
+	}
+
+	if !out.IsQuiet() && !out.IsJSON() {
+		out.Println("Opening browser for Google authentication...")
+		out.Printf("If browser doesn't open, visit:\n%s\n\n", authResp.AuthURL)
+	}
+
+	// Open browser
+	openBrowser(authResp.AuthURL)
+
+	// Wait for callback
+	codeChan := make(chan string, 1)
+	stateChan := make(chan string, 1)
+	errChan := make(chan error, 1)
+
+	srv := &http.Server{}
+	srv.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		code := r.URL.Query().Get("code")
+		state := r.URL.Query().Get("state")
+
+		if code == "" {
+			errMsg := r.URL.Query().Get("error")
+			if errMsg == "" {
+				errMsg = "no authorization code received"
+			}
+			w.Header().Set("Content-Type", "text/html")
+			fmt.Fprintf(w, "<html><body><h1>Authentication Failed</h1><p>%s</p></body></html>", errMsg)
+			errChan <- fmt.Errorf(errMsg)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, "<html><body><h1>Authentication Successful!</h1><p>You can close this window.</p></body></html>")
+
+		codeChan <- code
+		stateChan <- state
+	})
+
+	go srv.Serve(listener)
+
+	// Wait for callback with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+
+	var code, state string
+	select {
+	case code = <-codeChan:
+		state = <-stateChan
+	case err := <-errChan:
+		return out.Error(err)
+	case <-ctx.Done():
+		return out.Error(fmt.Errorf("authentication timed out"))
+	}
+
+	srv.Shutdown(context.Background())
+
+	// Exchange code for tokens
+	if !out.IsQuiet() && !out.IsJSON() {
+		out.Println("Completing authentication...")
+	}
+
+	callbackResp, err := c.ExchangeGoogleCode(code, state)
+	if err != nil {
+		return out.Error(fmt.Errorf("exchange code: %w", err))
+	}
+
+	// Check if new user needs to claim a username
+	if callbackResp.Status == "username_required" {
+		return handleUsernameClaim(c, out, callbackResp.GoogleID)
+	}
+
+	// Save session
+	sess := &session.Session{
+		Token:     callbackResp.AccessToken,
+		User:      callbackResp.User,
+		CreatedAt: time.Now(),
+	}
+
+	if err := session.Save(sess); err != nil {
+		return out.Error(fmt.Errorf("save session: %w", err))
+	}
+
+	if out.IsJSON() {
+		out.Success(map[string]interface{}{
+			"user":       callbackResp.User,
+			"is_new_user": callbackResp.IsNewUser,
+		})
+	} else {
+		if callbackResp.IsNewUser {
+			out.Printf("✓ Welcome to Mesh, @%s!\n", callbackResp.User.Handle)
+		} else {
+			out.Printf("✓ Logged in as @%s\n", callbackResp.User.Handle)
+		}
+	}
+
+	return nil
+}
+
+func handleUsernameClaim(c *client.Client, out *output.Printer, googleID string) error {
+	if out.IsJSON() {
+		return out.Error(fmt.Errorf("username claim required, use interactive mode"))
+	}
+
+	out.Println("\n🎉 Welcome to Mesh! Let's claim your username.")
+	out.Println("Your username will be unique and used for your @handle.\n")
+
+	for {
+		fmt.Print("Choose a username: @")
+		var handle string
+		fmt.Scanln(&handle)
+
+		handle = strings.TrimSpace(strings.ToLower(handle))
+		if handle == "" {
+			out.Println("Username cannot be empty")
+			continue
+		}
+
+		// Try to claim the username
+		resp, err := c.ClaimUsername(&client.ClaimUsernameRequest{
+			GoogleID: googleID,
+			Handle:   handle,
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "already taken") {
+				out.Printf("Username @%s is already taken. Try another.\n", handle)
+				continue
+			}
+			if strings.Contains(err.Error(), "invalid") {
+				out.Println("Invalid username. Use only lowercase letters, numbers, and underscores (1-32 chars).")
+				continue
+			}
+			return out.Error(fmt.Errorf("claim username: %w", err))
+		}
+
+		// Save session
+		sess := &session.Session{
+			Token:     resp.AccessToken,
+			User:      resp.User,
+			CreatedAt: time.Now(),
+		}
+
+		if err := session.Save(sess); err != nil {
+			return out.Error(fmt.Errorf("save session: %w", err))
+		}
+
+		out.Printf("\n✓ Welcome to Mesh, @%s!\n", resp.User.Handle)
+		return nil
+	}
+}
+
 func loginWithSSH(c *client.Client, out *output.Printer) error {
+	// Get handle
+	handle := flagHandle
+	if handle == "" {
+		if out.IsJSON() {
+			return out.Error(fmt.Errorf("--handle is required"))
+		}
+		fmt.Print("Handle: ")
+		fmt.Scanln(&handle)
+		if handle == "" {
+			return out.Error(fmt.Errorf("handle is required"))
+		}
+	}
+
 	// Find SSH key
 	keyPath, err := findSSHKey()
 	if err != nil {
@@ -188,7 +384,7 @@ func loginWithSSH(c *client.Client, out *output.Printer) error {
 		out.Println("Requesting authentication challenge...")
 	}
 
-	challenge, err := c.GetChallenge()
+	challenge, err := c.GetChallenge(handle)
 	if err != nil {
 		return out.Error(fmt.Errorf("get challenge: %w", err))
 	}
@@ -199,14 +395,18 @@ func loginWithSSH(c *client.Client, out *output.Printer) error {
 		return out.Error(fmt.Errorf("sign challenge: %w", err))
 	}
 
+	// Base64 encode the signature
+	sigB64 := base64.StdEncoding.EncodeToString(signature.Blob)
+
 	// Login
 	if !out.IsQuiet() && !out.IsJSON() {
 		out.Println("Authenticating...")
 	}
 
 	resp, err := c.Login(&client.LoginRequest{
+		Handle:    handle,
 		Challenge: challenge,
-		Signature: string(signature.Blob),
+		Signature: sigB64,
 		PublicKey: pubKeyStr,
 	})
 	if err != nil {
@@ -215,7 +415,7 @@ func loginWithSSH(c *client.Client, out *output.Printer) error {
 
 	// Save session
 	sess := &session.Session{
-		Token:     resp.Token,
+		Token:     resp.AccessToken,
 		User:      resp.User,
 		CreatedAt: time.Now(),
 	}

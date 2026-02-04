@@ -129,33 +129,49 @@ func handleChallengeInteractive(c *client.Client, out *output.Printer, apiErr *a
 		return false
 	}
 
-	// Extract challenge ID from error details
+	// Extract challenge from error details
 	if apiErr.Details == nil {
+		out.Error(fmt.Errorf("challenge required but no details provided"))
 		return false
 	}
 
-	challengeID, ok := apiErr.Details["challenge_id"].(string)
+	challengeData, ok := apiErr.Details["challenge"].(map[string]interface{})
 	if !ok {
+		out.Error(fmt.Errorf("challenge required but format invalid"))
 		return false
 	}
 
-	// Fetch challenge details
-	challenge, err := c.GetChallengeByID(challengeID)
-	if err != nil {
-		out.Error(fmt.Errorf("failed to fetch challenge: %w", err))
+	// Extract challenge ID
+	var challengeID int64
+	if id, ok := challengeData["id"].(float64); ok {
+		challengeID = int64(id)
+	} else {
+		out.Error(fmt.Errorf("challenge id not found"))
 		return false
 	}
+
+	// Extract payload (contains the question)
+	payload, _ := challengeData["payload"].(string)
+	challengeType, _ := challengeData["type"].(string)
+	difficulty, _ := challengeData["difficulty"].(string)
 
 	// Display challenge
 	out.Println("\n⚡ Challenge required")
-	out.Printf("   %s\n", challenge.Description)
+	out.Printf("   Type: %s (%s)\n", challengeType, difficulty)
 
-	if len(challenge.Data) > 0 {
-		for k, v := range challenge.Data {
-			if k != "description" {
-				out.Printf("   %s: %v\n", k, v)
-			}
+	// Parse and display the payload
+	var payloadData map[string]interface{}
+	if err := json.Unmarshal([]byte(payload), &payloadData); err == nil {
+		// For arithmetic challenges
+		if a, aOk := payloadData["a"]; aOk {
+			b := payloadData["b"]
+			op := payloadData["op"]
+			out.Printf("   Problem: %v %v %v = ?\n", a, op, b)
+		} else {
+			out.Printf("   Payload: %s\n", payload)
 		}
+	} else {
+		out.Printf("   Payload: %s\n", payload)
 	}
 
 	out.Println()
@@ -175,18 +191,22 @@ func handleChallengeInteractive(c *client.Client, out *output.Printer, apiErr *a
 		return false
 	}
 
-	// Submit answer
-	req := &client.SolveRequest{
-		Answer: answer,
-	}
-
-	_, err = c.SolveChallenge(challengeID, req)
+	// Submit answer via verify endpoint
+	verifyResp, err := c.VerifyChallenge(challengeID, answer)
 	if err != nil {
 		out.Error(fmt.Errorf("challenge failed: %w", err))
 		return false
 	}
 
-	out.Println()
+	if !verifyResp.Valid {
+		out.Error(fmt.Errorf("wrong answer, try again"))
+		return false
+	}
+
+	// Store the POI token for subsequent requests
+	c.SetPOIToken(verifyResp.Token)
+
+	out.Println("✓ Challenge passed!")
 	return true
 }
 

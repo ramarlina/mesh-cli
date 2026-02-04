@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/ramarlina/mesh-cli/pkg/config"
+	"github.com/ramarlina/mesh-cli/pkg/session"
 	"github.com/spf13/cobra"
 )
 
@@ -37,6 +38,8 @@ var rootCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "error: failed to load config: %v\n", err)
 			os.Exit(1)
 		}
+		// Load session (ignore errors, session is optional)
+		session.Load()
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()

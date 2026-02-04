@@ -194,7 +194,7 @@ func runDoctorHuman(out *output.Printer) {
 	out.Printf("Connectivity:\n")
 	apiURL := config.GetAPIUrl()
 	c := client.New(apiURL)
-	_, err = c.GetChallenge()
+	err = c.Health()
 	if err != nil {
 		out.Printf("  ✗ Cannot reach server: %v\n", err)
 	} else {
@@ -257,7 +257,7 @@ func runDoctorJSON(out *output.Printer) {
 	// Check connectivity
 	apiURL := config.GetAPIUrl()
 	c := client.New(apiURL)
-	_, err = c.GetChallenge()
+	err = c.Health()
 	if err != nil {
 		result["connectivity"] = map[string]interface{}{
 			"status": "error",

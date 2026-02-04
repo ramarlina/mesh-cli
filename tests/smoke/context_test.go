@@ -2,10 +2,12 @@
 package smoke
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -195,7 +197,7 @@ func TestThisContextResolution(t *testing.T) {
 
 		// Verify like was registered
 		liked := extractFieldFromJSON(t, stdout, "liked")
-		if liked != "true" && liked != true {
+		if liked != "true" {
 			t.Logf("Like response: %s", stdout)
 		}
 
@@ -295,7 +297,7 @@ func TestThisContextInvalidUsage(t *testing.T) {
 		runCLIWithConfig(t, cfg, freshDir, []string{"login", "--token", token})
 
 		// Try to use 'this' without a prior command
-		stdout, stderr, exitCode := runCLIWithConfig(t, cfg, freshDir, []string{"edit", "this", "--set", "test"})
+		_, stderr, exitCode := runCLIWithConfig(t, cfg, freshDir, []string{"edit", "this", "--set", "test"})
 
 		if exitCode == 0 {
 			t.Error("Using 'this' without prior context should fail")
@@ -317,7 +319,7 @@ func TestThisContextInvalidUsage(t *testing.T) {
 
 		// Now try to edit the first post - should fail because context changed
 		newContent := "This should fail"
-		stdout, stderr, exitCode := runCLIWithConfig(t, cfg, tempDir, []string{"edit", "this", "--set", newContent, "--json"})
+		stdout, _, _ = runCLIWithConfig(t, cfg, tempDir, []string{"edit", "this", "--set", newContent, "--json"})
 
 		// The context should now point to the second post
 		// Verify by checking if the second post's content changed
@@ -546,8 +548,3 @@ func extractFieldFromJSON(t *testing.T, jsonStr, field string) string {
 
 	return ""
 }
-
-import (
-	"bytes"
-	"regexp"
-)

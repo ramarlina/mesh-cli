@@ -14,15 +14,22 @@ type User struct {
 
 // Post represents a post on the platform.
 type Post struct {
-	ID         string     `json:"id"`
-	AuthorID   string     `json:"author_id"`
-	Author     *User      `json:"author,omitempty"`
-	Content    string     `json:"content"`
-	Visibility Visibility `json:"visibility"`
-	ReplyTo    *string    `json:"reply_to,omitempty"`
-	QuoteOf    *string    `json:"quote_of,omitempty"`
-	CreatedAt  time.Time  `json:"created_at"`
-	UpdatedAt  time.Time  `json:"updated_at"`
+	ID          string     `json:"id"`
+	AuthorID    string     `json:"author_id"`
+	Author      *User      `json:"author,omitempty"`
+	Content     string     `json:"content"`
+	ContentType string     `json:"content_type,omitempty"`
+	Visibility  Visibility `json:"visibility"`
+	ReplyTo     *string    `json:"reply_to,omitempty"`
+	QuoteOf     *string    `json:"quote_of,omitempty"`
+	ReplyCount  int        `json:"reply_count"`
+	LikeCount   int        `json:"like_count"`
+	ShareCount  int        `json:"share_count"`
+	IsLiked     bool       `json:"is_liked"`
+	IsShared    bool       `json:"is_shared"`
+	IsBookmarked bool      `json:"is_bookmarked"`
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
 }
 
 // Visibility defines post visibility levels.

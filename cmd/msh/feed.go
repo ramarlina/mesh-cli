@@ -216,13 +216,13 @@ var threadCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		posts, err := c.GetThread(id)
+		thread, err := c.GetThread(id)
 		if err != nil {
 			out.Error(err)
 			os.Exit(1)
 		}
 
-		if len(posts) == 0 {
+		if thread.Post == nil {
 			if !flagQuiet {
 				out.Println("No thread found")
 			}
@@ -233,13 +233,17 @@ var threadCmd = &cobra.Command{
 		context.Set(id, "post")
 
 		if flagJSON {
-			out.Success(map[string]interface{}{"posts": posts})
+			out.Success(map[string]interface{}{
+				"post":    thread.Post,
+				"replies": thread.Replies,
+			})
 		} else {
-			for i, post := range posts {
-				renderPost(out, post)
-				if i < len(posts)-1 {
-					out.Println()
-				}
+			// Render main post
+			renderPost(out, thread.Post)
+			// Render replies
+			for _, reply := range thread.Replies {
+				out.Println()
+				renderPost(out, reply)
 			}
 		}
 	},
