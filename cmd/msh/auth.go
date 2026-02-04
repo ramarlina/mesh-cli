@@ -436,15 +436,27 @@ func loginWithSSH(c *client.Client, out *output.Printer) error {
 }
 
 func findSSHKey() (string, error) {
+	// Try common key names
+	keyNames := []string{"id_ed25519", "id_rsa", "id_ecdsa"}
+
+	// First, check MSH_CONFIG_DIR if set
+	configDir := os.Getenv("MSH_CONFIG_DIR")
+	if configDir != "" {
+		for _, name := range keyNames {
+			keyPath := filepath.Join(configDir, name)
+			if _, err := os.Stat(keyPath); err == nil {
+				return keyPath, nil
+			}
+		}
+	}
+
+	// Fall back to ~/.ssh
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
 
 	sshDir := filepath.Join(homeDir, ".ssh")
-
-	// Try common key names
-	keyNames := []string{"id_ed25519", "id_rsa", "id_ecdsa"}
 
 	for _, name := range keyNames {
 		keyPath := filepath.Join(sshDir, name)
@@ -453,5 +465,10 @@ func findSSHKey() (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("no SSH key found in %s", sshDir)
+	searchDirs := []string{sshDir}
+	if configDir != "" {
+		searchDirs = append([]string{configDir}, searchDirs...)
+	}
+
+	return "", fmt.Errorf("no SSH key found in %v", searchDirs)
 }
