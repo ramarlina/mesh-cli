@@ -26,6 +26,29 @@ type Session struct {
 	CreatedAt time.Time    `json:"created_at"`
 }
 
+func getSessionDir() (string, error) {
+	// Check if MSH_CONFIG_DIR is set
+	if configDir := os.Getenv("MSH_CONFIG_DIR"); configDir != "" {
+		if err := os.MkdirAll(configDir, 0700); err != nil {
+			return "", fmt.Errorf("create config directory: %w", err)
+		}
+		return configDir, nil
+	}
+
+	// Fall back to ~/.msh
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("get home dir: %w", err)
+	}
+
+	mshDir := filepath.Join(homeDir, ".msh")
+	if err := os.MkdirAll(mshDir, 0700); err != nil {
+		return "", fmt.Errorf("create .msh directory: %w", err)
+	}
+
+	return mshDir, nil
+}
+
 // Load reads the session from disk.
 func Load() (*Session, error) {
 	mu.Lock()
@@ -35,14 +58,9 @@ func Load() (*Session, error) {
 		return globalSess, nil
 	}
 
-	homeDir, err := os.UserHomeDir()
+	mshDir, err := getSessionDir()
 	if err != nil {
-		return nil, fmt.Errorf("get home dir: %w", err)
-	}
-
-	mshDir := filepath.Join(homeDir, ".msh")
-	if err := os.MkdirAll(mshDir, 0700); err != nil {
-		return nil, fmt.Errorf("create .msh directory: %w", err)
+		return nil, err
 	}
 
 	sessionPath = filepath.Join(mshDir, "session.json")
@@ -77,14 +95,9 @@ func Save(sess *Session) error {
 	mu.Lock()
 	defer mu.Unlock()
 
-	homeDir, err := os.UserHomeDir()
+	mshDir, err := getSessionDir()
 	if err != nil {
-		return fmt.Errorf("get home dir: %w", err)
-	}
-
-	mshDir := filepath.Join(homeDir, ".msh")
-	if err := os.MkdirAll(mshDir, 0700); err != nil {
-		return fmt.Errorf("create .msh directory: %w", err)
+		return err
 	}
 
 	sessionPath = filepath.Join(mshDir, "session.json")
@@ -107,12 +120,12 @@ func Clear() error {
 	mu.Lock()
 	defer mu.Unlock()
 
-	homeDir, err := os.UserHomeDir()
+	mshDir, err := getSessionDir()
 	if err != nil {
-		return fmt.Errorf("get home dir: %w", err)
+		return err
 	}
 
-	sessionPath = filepath.Join(homeDir, ".msh", "session.json")
+	sessionPath = filepath.Join(mshDir, "session.json")
 
 	// Remove file if it exists
 	if _, err := os.Stat(sessionPath); err == nil {
