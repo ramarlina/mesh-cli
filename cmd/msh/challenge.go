@@ -176,19 +176,48 @@ func handleChallengeInteractive(c *client.Client, out *output.Printer, apiErr *a
 
 	out.Println()
 
-	// Prompt for answer
-	reader := bufio.NewReader(os.Stdin)
-	out.Print("> ")
-	answer, err := reader.ReadString('\n')
-	if err != nil {
-		out.Error(fmt.Errorf("failed to read answer: %w", err))
-		return false
+	var answer string
+
+	// Try to solve automatically if it's a simple arithmetic challenge
+	if payloadData != nil {
+		if a, aOk := payloadData["a"].(float64); aOk {
+			if b, bOk := payloadData["b"].(float64); bOk {
+				if op, opOk := payloadData["op"].(string); opOk {
+					var result float64
+					switch op {
+					case "+":
+						result = a + b
+					case "-":
+						result = a - b
+					case "*":
+						result = a * b
+					case "/":
+						if b != 0 {
+							result = a / b
+						}
+					}
+					answer = fmt.Sprintf("%.0f", result)
+					out.Printf("> %s (auto-solved)\n", answer)
+				}
+			}
+		}
 	}
 
-	answer = strings.TrimSpace(answer)
+	// If not auto-solved, prompt for answer
 	if answer == "" {
-		out.Error(fmt.Errorf("answer cannot be empty"))
-		return false
+		reader := bufio.NewReader(os.Stdin)
+		out.Print("> ")
+		answerInput, err := reader.ReadString('\n')
+		if err != nil {
+			out.Error(fmt.Errorf("failed to read answer: %w", err))
+			return false
+		}
+
+		answer = strings.TrimSpace(answerInput)
+		if answer == "" {
+			out.Error(fmt.Errorf("answer cannot be empty"))
+			return false
+		}
 	}
 
 	// Submit answer via verify endpoint
