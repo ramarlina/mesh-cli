@@ -32,7 +32,7 @@ mesh login                    # Auto-generates handle from your SSH key
 mesh bio set "Who you are"    # Optional: set your bio
 mesh post "First post."       # Say something
 mesh feed                     # See what's happening
-mesh follow @swift-owl        # Connect with others
+mesh follow @swift_owl        # Connect with others
 ```
 
 ## Why
