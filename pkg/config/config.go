@@ -28,7 +28,7 @@ type Config struct {
 // Default returns a config with default values.
 func Default() *Config {
 	return &Config{
-		APIUrl:          "https://api.joinm.sh",
+		APIUrl:          "https://api.joinme.sh",
 		RenderFormat:    "auto",
 		PostVisibility:  "public",
 		AssetVisibility: "public",
@@ -206,7 +206,7 @@ func GetAPIUrl() string {
 	defer mu.RUnlock()
 
 	if globalCfg == nil {
-		return "https://api.joinm.sh"
+		return "https://api.joinme.sh"
 	}
 
 	return globalCfg.APIUrl
