@@ -85,9 +85,17 @@ func Load() (*Config, error) {
 
 	globalCfg = &cfg
 
-	// Migrate: fix typo from old versions
+	// Migrate: fix incorrect URLs from old versions
+	needsSave := false
 	if globalCfg.APIUrl == "https://api.joinm.sh" {
 		globalCfg.APIUrl = "https://api.joinme.sh"
+		needsSave = true
+	}
+	if globalCfg.APIUrl == "https://joinme.sh" {
+		globalCfg.APIUrl = "https://api.joinme.sh"
+		needsSave = true
+	}
+	if needsSave {
 		_ = save(globalCfg) // Best effort save
 	}
 
