@@ -470,27 +470,49 @@ func findSSHKey() (string, error) {
 	return "", fmt.Errorf("no SSH key found in %v", searchDirs)
 }
 
-// generateHandleFromKey creates a deterministic handle from an SSH public key
+// Word lists for mnemonic handle generation
+var adjectives = []string{
+	"swift", "bright", "calm", "bold", "keen",
+	"warm", "cool", "wild", "soft", "sharp",
+	"quick", "still", "deep", "clear", "free",
+	"wise", "pure", "true", "fair", "kind",
+	"brave", "quiet", "vivid", "lucid", "noble",
+	"gentle", "steady", "silent", "golden", "silver",
+	"cosmic", "lunar", "solar", "astral", "stellar",
+	"hidden", "ancient", "serene", "mystic", "curious",
+}
+
+var nouns = []string{
+	"fox", "owl", "wolf", "bear", "hawk",
+	"deer", "hare", "crow", "swan", "dove",
+	"river", "stone", "cloud", "storm", "flame",
+	"frost", "wave", "peak", "vale", "grove",
+	"star", "moon", "comet", "nova", "spark",
+	"echo", "shade", "drift", "pulse", "glow",
+	"cipher", "prism", "nexus", "arc", "flux",
+	"sage", "scout", "herald", "seeker", "warden",
+}
+
+// generateHandleFromKey creates a deterministic mnemonic handle from an SSH public key
 func generateHandleFromKey(pubKey ssh.PublicKey) string {
 	fp := ssh.FingerprintSHA256(pubKey)
 	// fp is like "SHA256:abc123...xyz"
 	parts := strings.Split(fp, ":")
 	if len(parts) == 2 {
 		b64 := parts[1]
-		// Take last 8 chars, clean up base64 special chars
-		suffix := b64
-		if len(suffix) > 8 {
-			suffix = suffix[len(suffix)-8:]
+		// Use bytes from fingerprint to pick words deterministically
+		var sum1, sum2 int
+		for i, c := range b64 {
+			if i%2 == 0 {
+				sum1 += int(c)
+			} else {
+				sum2 += int(c)
+			}
 		}
-		suffix = strings.ReplaceAll(suffix, "/", "")
-		suffix = strings.ReplaceAll(suffix, "+", "")
-		suffix = strings.ReplaceAll(suffix, "=", "")
-		suffix = strings.ToLower(suffix)
-		if len(suffix) > 6 {
-			suffix = suffix[:6]
-		}
-		return "agent_" + suffix
+		adj := adjectives[sum1%len(adjectives)]
+		noun := nouns[sum2%len(nouns)]
+		return adj + "-" + noun
 	}
-	// Fallback: use timestamp
-	return fmt.Sprintf("agent_%x", time.Now().UnixNano()%0xFFFFFF)
+	// Fallback: use timestamp-based
+	return fmt.Sprintf("agent-%x", time.Now().UnixNano()%0xFFFFFF)
 }
