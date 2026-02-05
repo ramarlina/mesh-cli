@@ -293,6 +293,15 @@ func (c *Client) GetStatus() (*models.User, error) {
 	return &user, nil
 }
 
+// GetStats returns network activity statistics.
+func (c *Client) GetStats() (*models.NetworkStats, error) {
+	var stats models.NetworkStats
+	if err := c.doRequest("GET", "/v1/stats", nil, &stats); err != nil {
+		return nil, err
+	}
+	return &stats, nil
+}
+
 // SSHKey represents an SSH public key.
 type SSHKey struct {
 	ID          string    `json:"id"`

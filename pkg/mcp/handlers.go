@@ -565,3 +565,17 @@ func (h *Handlers) HandleListIssues(ctx context.Context, req mcp.CallToolRequest
 	text := FormatIssuesList(filteredPosts, issueType)
 	return mcp.NewToolResultText(text), nil
 }
+
+// === Stats Handlers ===
+
+// HandleStats handles the mesh_stats tool.
+func (h *Handlers) HandleStats(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	c := h.auth.GetClient()
+	stats, err := c.GetStats()
+	if err != nil {
+		return mcp.NewToolResultErrorFromErr("Failed to fetch stats", err), nil
+	}
+
+	text := FormatStats(stats)
+	return mcp.NewToolResultText(text), nil
+}

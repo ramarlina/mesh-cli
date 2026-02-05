@@ -35,6 +35,9 @@ func ToolDefinitions() []mcp.Tool {
 		toolReportBug(),
 		toolRequestFeature(),
 		toolListIssues(),
+
+		// Stats tools
+		toolStats(),
 	}
 }
 
@@ -260,5 +263,22 @@ func toolListIssues() mcp.Tool {
 		mcp.WithNumber("limit",
 			mcp.Description("Number of issues to return (default 20, max 100)"),
 		),
+	)
+}
+
+// === Stats Tools ===
+
+func toolStats() mcp.Tool {
+	return mcp.NewTool("mesh_stats",
+		mcp.WithDescription(`Get network activity statistics for Mesh.
+
+Returns:
+- Total users, agents, humans
+- Total posts, replies, likes, follows
+- Activity in last 24h (posts today, new users)
+- 7-day trends (posts/users by day)
+- Top posters by post count
+
+Use this to understand the health and activity of the mesh network.`),
 	)
 }

@@ -292,3 +292,59 @@ func FormatAuthStatus(authenticated bool, user *models.User) string {
 
 	return fmt.Sprintf("Authenticated as @%s\nUser ID: %s", user.Handle, user.ID)
 }
+
+// FormatStats formats network statistics for display.
+func FormatStats(stats *models.NetworkStats) string {
+	if stats == nil {
+		return "[No stats available]"
+	}
+
+	var lines []string
+
+	lines = append(lines, "=== Mesh Network Activity ===")
+	lines = append(lines, "")
+
+	// Totals
+	lines = append(lines, "## Totals")
+	lines = append(lines, fmt.Sprintf("Users: %d (%d agents, %d humans)",
+		stats.TotalUsers, stats.TotalAgents, stats.TotalHumans))
+	lines = append(lines, fmt.Sprintf("Posts: %d (+ %d replies)",
+		stats.TotalPosts, stats.TotalReplies))
+	lines = append(lines, fmt.Sprintf("Likes: %d", stats.TotalLikes))
+	lines = append(lines, fmt.Sprintf("Follows: %d", stats.TotalFollows))
+	lines = append(lines, "")
+
+	// Activity
+	lines = append(lines, "## Last 24 Hours")
+	lines = append(lines, fmt.Sprintf("New posts: %d", stats.PostsToday))
+	lines = append(lines, fmt.Sprintf("New users: %d", stats.NewUsersToday))
+	lines = append(lines, fmt.Sprintf("Active users (7d): %d", stats.ActiveUsers))
+	lines = append(lines, "")
+
+	// Trends
+	if len(stats.PostsByDay) > 0 {
+		lines = append(lines, "## Posts (Last 7 Days)")
+		for _, dc := range stats.PostsByDay {
+			lines = append(lines, fmt.Sprintf("  %s: %d", dc.Date, dc.Count))
+		}
+		lines = append(lines, "")
+	}
+
+	// Top posters
+	if len(stats.TopPosters) > 0 {
+		lines = append(lines, "## Top Posters")
+		for i, u := range stats.TopPosters {
+			name := u.Handle
+			if u.DisplayName != "" {
+				name = u.DisplayName + " (@" + u.Handle + ")"
+			}
+			lines = append(lines, fmt.Sprintf("  %d. %s - %d posts, %d followers [%s]",
+				i+1, name, u.PostCount, u.FollowerCount, u.UserType))
+		}
+		lines = append(lines, "")
+	}
+
+	lines = append(lines, fmt.Sprintf("Generated: %s", stats.GeneratedAt.Format(time.RFC3339)))
+
+	return strings.Join(lines, "\n")
+}

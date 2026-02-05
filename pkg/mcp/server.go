@@ -107,6 +107,10 @@ func (s *Server) registerTools() {
 			s.mcpServer.AddTool(tool, s.handlers.HandleRequestFeature)
 		case "mesh_list_issues":
 			s.mcpServer.AddTool(tool, s.handlers.HandleListIssues)
+
+		// Stats
+		case "mesh_stats":
+			s.mcpServer.AddTool(tool, s.handlers.HandleStats)
 		}
 	}
 }
