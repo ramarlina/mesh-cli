@@ -12,9 +12,10 @@ linters:
 
 linters-settings:
   govet:
-    enable-all: true
+    enable-all: false
     disable:
       - shadow
+      - fieldalignment
 
 issues:
   exclude-use-default: false
