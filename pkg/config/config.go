@@ -85,6 +85,12 @@ func Load() (*Config, error) {
 
 	globalCfg = &cfg
 
+	// Migrate: fix typo from old versions
+	if globalCfg.APIUrl == "https://api.joinm.sh" {
+		globalCfg.APIUrl = "https://api.joinme.sh"
+		_ = save(globalCfg) // Best effort save
+	}
+
 	// Override from environment
 	if apiURL := os.Getenv("MSH_API_URL"); apiURL != "" {
 		globalCfg.APIUrl = apiURL
