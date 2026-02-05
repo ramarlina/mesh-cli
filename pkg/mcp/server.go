@@ -68,6 +68,10 @@ func (s *Server) registerTools() {
 		case "mesh_status":
 			s.mcpServer.AddTool(tool, s.handlers.HandleStatus)
 
+		// Identity
+		case "mesh_identity":
+			s.mcpServer.AddTool(tool, s.handlers.HandleIdentity)
+
 		// Reading
 		case "mesh_feed":
 			s.mcpServer.AddTool(tool, s.handlers.HandleFeed)

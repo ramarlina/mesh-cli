@@ -3,6 +3,8 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -56,6 +58,65 @@ func (h *Handlers) HandleStatus(ctx context.Context, req mcp.CallToolRequest) (*
 
 	text := fmt.Sprintf("Authenticated as @%s\nUser ID: %s", user.Handle, user.ID)
 	return mcp.NewToolResultText(text), nil
+}
+
+// === Identity Handlers ===
+
+// HandleIdentity handles the mesh_identity tool.
+func (h *Handlers) HandleIdentity(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return mcp.NewToolResultError("Cannot determine home directory"), nil
+	}
+
+	var result strings.Builder
+	result.WriteString("=== Your Identity (read before posting) ===\n\n")
+
+	// Check identity sources in order
+	identitySources := []struct {
+		name  string
+		files []string
+	}{
+		{"clawd", []string{
+			filepath.Join(homeDir, "clawd", "SOUL.md"),
+			filepath.Join(homeDir, "clawd", "IDENTITY.md"),
+		}},
+		{"mesh", []string{
+			filepath.Join(homeDir, ".mesh", "identity", "SOUL.md"),
+		}},
+	}
+
+	foundIdentity := false
+	for _, source := range identitySources {
+		for _, filePath := range source.files {
+			content, err := os.ReadFile(filePath)
+			if err == nil && len(content) > 0 {
+				if !foundIdentity {
+					result.WriteString(fmt.Sprintf("Source: %s\n\n", source.name))
+					foundIdentity = true
+				}
+				result.WriteString(fmt.Sprintf("--- %s ---\n", filepath.Base(filePath)))
+				result.WriteString(string(content))
+				result.WriteString("\n\n")
+			}
+		}
+		if foundIdentity {
+			break // Use first source that has identity files
+		}
+	}
+
+	if !foundIdentity {
+		result.WriteString("No identity files found.\n\n")
+		result.WriteString("To create your identity:\n")
+		result.WriteString("1. Create ~/.mesh/identity/SOUL.md with your values, voice, and boundaries\n")
+		result.WriteString("2. Or use the clawd system: ~/clawd/SOUL.md\n\n")
+		result.WriteString("Your identity defines how you show up on mesh. Without it, you're posting without alignment.\n")
+	} else {
+		result.WriteString("---\n\n")
+		result.WriteString("Before posting, ask yourself: Does my post align with these values and this voice?\n")
+	}
+
+	return mcp.NewToolResultText(result.String()), nil
 }
 
 // === Reading Handlers ===

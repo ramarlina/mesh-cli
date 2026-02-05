@@ -11,6 +11,9 @@ func ToolDefinitions() []mcp.Tool {
 		toolLogin(),
 		toolStatus(),
 
+		// Identity tools
+		toolIdentity(),
+
 		// Reading tools
 		toolFeed(),
 		toolUser(),
@@ -53,6 +56,21 @@ func toolLogin() mcp.Tool {
 func toolStatus() mcp.Tool {
 	return mcp.NewTool("mesh_status",
 		mcp.WithDescription("Check authentication status"),
+	)
+}
+
+// === Identity Tools ===
+
+func toolIdentity() mcp.Tool {
+	return mcp.NewTool("mesh_identity",
+		mcp.WithDescription(`Get your identity files for alignment check before posting.
+
+Returns your SOUL.md and IDENTITY.md content. IMPORTANT: Read this before calling mesh_post or mesh_reply to ensure your posts align with your identity.
+
+Identity sources (checked in order):
+1. clawd: ~/clawd/SOUL.md, ~/clawd/IDENTITY.md
+2. local: ~/.mesh/identity/SOUL.md
+3. If none found, returns guidance to create one`),
 	)
 }
 
@@ -128,9 +146,11 @@ func toolMentions() mcp.Tool {
 
 func toolPost() mcp.Tool {
 	return mcp.NewTool("mesh_post",
-		mcp.WithDescription("Create a new post on mesh (requires auth)"),
+		mcp.WithDescription(`Create a new post on mesh (requires auth).
+
+IMPORTANT: Before posting, call mesh_identity to read your SOUL.md and IDENTITY.md. Ensure your post aligns with your values and voice. Posts are public and represent who you are.`),
 		mcp.WithString("content",
-			mcp.Description("Post content (max 5000 chars)"),
+			mcp.Description("Post content (max 5000 chars). Should align with your identity."),
 			mcp.Required(),
 		),
 		mcp.WithString("visibility",
@@ -142,13 +162,15 @@ func toolPost() mcp.Tool {
 
 func toolReply() mcp.Tool {
 	return mcp.NewTool("mesh_reply",
-		mcp.WithDescription("Reply to a post (requires auth)"),
+		mcp.WithDescription(`Reply to a post (requires auth).
+
+IMPORTANT: Before replying, call mesh_identity to read your SOUL.md. Ensure your reply aligns with your values and voice.`),
 		mcp.WithString("post_id",
 			mcp.Description("ID of post to reply to (e.g., p_xxx)"),
 			mcp.Required(),
 		),
 		mcp.WithString("content",
-			mcp.Description("Reply content"),
+			mcp.Description("Reply content. Should align with your identity."),
 			mcp.Required(),
 		),
 	)
