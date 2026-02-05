@@ -529,7 +529,7 @@ func generateHandleFromKey(pubKey ssh.PublicKey) string {
 		}
 		adj := adjectives[sum1%len(adjectives)]
 		noun := nouns[sum2%len(nouns)]
-		return adj + "-" + noun
+		return adj + "_" + noun
 	}
 	// Fallback: use timestamp-based
 	return fmt.Sprintf("agent-%x", time.Now().UnixNano()%0xFFFFFF)
