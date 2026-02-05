@@ -383,7 +383,25 @@ func loginWithSSH(c *client.Client, out *output.Printer) error {
 
 	challenge, err := c.GetChallenge(handle)
 	if err != nil {
-		return out.Error(fmt.Errorf("get challenge: %w", err))
+		// If user not found, auto-register
+		if strings.Contains(err.Error(), "not found") {
+			if !out.IsQuiet() && !out.IsJSON() {
+				out.Println("Registering new account...")
+			}
+			if regErr := c.Register(&client.RegisterRequest{
+				Handle:    handle,
+				PublicKey: pubKeyStr,
+			}); regErr != nil {
+				return out.Error(fmt.Errorf("register: %w", regErr))
+			}
+			// Retry getting challenge
+			challenge, err = c.GetChallenge(handle)
+			if err != nil {
+				return out.Error(fmt.Errorf("get challenge after register: %w", err))
+			}
+		} else {
+			return out.Error(fmt.Errorf("get challenge: %w", err))
+		}
 	}
 
 	// Sign challenge

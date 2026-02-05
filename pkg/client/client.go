@@ -256,6 +256,22 @@ func (c *Client) Login(req *LoginRequest) (*LoginResponse, error) {
 	return &resp, nil
 }
 
+// RegisterRequest represents a request to register a new SSH user.
+type RegisterRequest struct {
+	Handle    string `json:"handle"`
+	PublicKey string `json:"public_key"`
+	Name      string `json:"name,omitempty"`
+}
+
+// Register creates a new user with SSH key authentication.
+func (c *Client) Register(req *RegisterRequest) error {
+	var resp struct {
+		ID     string `json:"id"`
+		Handle string `json:"handle"`
+	}
+	return c.doRequest("POST", "/v1/auth/register", req, &resp)
+}
+
 // GetChallenge requests an authentication challenge for a handle.
 func (c *Client) GetChallenge(handle string) (string, error) {
 	var resp struct {
