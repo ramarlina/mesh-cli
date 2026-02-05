@@ -104,7 +104,7 @@ var challengeCmd = &cobra.Command{
 func renderChallenge(out *output.Printer, ch *client.Challenge) {
 	if out.IsJSON() {
 		data, _ := json.Marshal(ch)
-		out.Print(string(data))
+		out.Print("%s", string(data))
 		return
 	}
 

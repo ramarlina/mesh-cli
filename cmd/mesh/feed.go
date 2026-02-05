@@ -341,7 +341,7 @@ var findCmd = &cobra.Command{
 func renderPost(out *output.Printer, post *models.Post) {
 	if out.IsJSON() {
 		data, _ := json.Marshal(post)
-		out.Print(string(data))
+		out.Print("%s", string(data))
 		return
 	}
 

@@ -414,7 +414,7 @@ func decryptMessage(encrypted string, recipientPrivateKey, senderPublicKey *[32]
 func renderDM(out *output.Printer, dm *client.DM, decryptedContent string) {
 	if out.IsJSON() {
 		data, _ := json.Marshal(dm)
-		out.Print(string(data))
+		out.Print("%s", string(data))
 		return
 	}
 

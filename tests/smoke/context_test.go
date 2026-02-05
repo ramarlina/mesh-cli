@@ -202,7 +202,7 @@ func TestThisContextResolution(t *testing.T) {
 		}
 
 		// Unlike using 'this'
-		stdout, stderr, exitCode = runCLIWithConfig(t, cfg, tempDir, []string{"unlike", "this", "--json"})
+		_, stderr, exitCode = runCLIWithConfig(t, cfg, tempDir, []string{"unlike", "this", "--json"})
 
 		if exitCode != 0 {
 			t.Fatalf("Unlike with 'this' failed. Stderr: %s", stderr)
@@ -225,14 +225,14 @@ func TestThisContextResolution(t *testing.T) {
 		}
 
 		// Bookmark the post using 'this'
-		stdout, stderr, exitCode = runCLIWithConfig(t, cfg, tempDir, []string{"bookmark", "this", "--json"})
+		_, stderr, exitCode = runCLIWithConfig(t, cfg, tempDir, []string{"bookmark", "this", "--json"})
 
 		if exitCode != 0 {
 			t.Fatalf("Bookmark with 'this' failed. Stderr: %s", stderr)
 		}
 
 		// Unbookmark using 'this'
-		stdout, stderr, exitCode = runCLIWithConfig(t, cfg, tempDir, []string{"unbookmark", "this", "--json"})
+		_, stderr, exitCode = runCLIWithConfig(t, cfg, tempDir, []string{"unbookmark", "this", "--json"})
 
 		if exitCode != 0 {
 			t.Fatalf("Unbookmark with 'this' failed. Stderr: %s", stderr)
@@ -255,14 +255,14 @@ func TestThisContextResolution(t *testing.T) {
 		}
 
 		// Share the post using 'this'
-		stdout, stderr, exitCode = runCLIWithConfig(t, cfg, tempDir, []string{"share", "this", "--json"})
+		_, stderr, exitCode = runCLIWithConfig(t, cfg, tempDir, []string{"share", "this", "--json"})
 
 		if exitCode != 0 {
 			t.Fatalf("Share with 'this' failed. Stderr: %s", stderr)
 		}
 
 		// Unshare using 'this'
-		stdout, stderr, exitCode = runCLIWithConfig(t, cfg, tempDir, []string{"unshare", "this", "--json"})
+		_, stderr, exitCode = runCLIWithConfig(t, cfg, tempDir, []string{"unshare", "this", "--json"})
 
 		if exitCode != 0 {
 			t.Fatalf("Unshare with 'this' failed. Stderr: %s", stderr)

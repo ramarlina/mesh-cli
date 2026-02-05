@@ -210,7 +210,7 @@ var inboxClearCmd = &cobra.Command{
 func renderNotification(out *output.Printer, notif *client.Notification) {
 	if out.IsJSON() {
 		data, _ := json.Marshal(notif)
-		out.Print(string(data))
+		out.Print("%s", string(data))
 		return
 	}
 

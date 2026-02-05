@@ -19,6 +19,7 @@ func TestToolDefinitions(t *testing.T) {
 	expectedTools := []string{
 		"mesh_login",
 		"mesh_status",
+		"mesh_identity",
 		"mesh_feed",
 		"mesh_user",
 		"mesh_thread",
@@ -33,6 +34,7 @@ func TestToolDefinitions(t *testing.T) {
 		"mesh_report_bug",
 		"mesh_request_feature",
 		"mesh_list_issues",
+		"mesh_stats",
 	}
 
 	if len(tools) != len(expectedTools) {

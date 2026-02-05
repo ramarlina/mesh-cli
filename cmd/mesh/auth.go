@@ -217,7 +217,7 @@ func loginWithGoogle(c *client.Client, out *output.Printer) error {
 			}
 			w.Header().Set("Content-Type", "text/html")
 			fmt.Fprintf(w, "<html><body><h1>Authentication Failed</h1><p>%s</p></body></html>", errMsg)
-			errChan <- fmt.Errorf(errMsg)
+			errChan <- fmt.Errorf("%s", errMsg)
 			return
 		}
 
@@ -294,7 +294,7 @@ func handleUsernameClaim(c *client.Client, out *output.Printer, googleID string)
 	}
 
 	out.Println("\n🎉 Welcome to Mesh! Let's claim your username.")
-	out.Println("Your username will be unique and used for your @handle.\n")
+	out.Println("Your username will be unique and used for your @handle.")
 
 	for {
 		fmt.Print("Choose a username: @")

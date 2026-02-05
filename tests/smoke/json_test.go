@@ -36,9 +36,14 @@ func TestJSONOutput(t *testing.T) {
 			command:   []string{"status", "--json"},
 			needsAuth: false,
 			validate: func(t *testing.T, output string) error {
-				var result map[string]any
-				if err := json.Unmarshal([]byte(output), &result); err != nil {
+				var resp map[string]any
+				if err := json.Unmarshal([]byte(output), &resp); err != nil {
 					return err
+				}
+				// Response is wrapped: {"ok": true, "result": {...}}
+				result, ok := resp["result"].(map[string]any)
+				if !ok {
+					return fmt.Errorf("missing or invalid 'result' field")
 				}
 				// Should have authenticated field
 				if _, ok := result["authenticated"]; !ok {
@@ -49,12 +54,17 @@ func TestJSONOutput(t *testing.T) {
 		},
 		{
 			name:      "config",
-			command:   []string{"config", "--json"},
+			command:   []string{"config", "ls", "--json"},
 			needsAuth: false,
 			validate: func(t *testing.T, output string) error {
-				var result map[string]any
-				if err := json.Unmarshal([]byte(output), &result); err != nil {
+				var resp map[string]any
+				if err := json.Unmarshal([]byte(output), &resp); err != nil {
 					return err
+				}
+				// Response is wrapped: {"ok": true, "result": {...}}
+				result, ok := resp["result"].(map[string]any)
+				if !ok {
+					return fmt.Errorf("missing or invalid 'result' field")
 				}
 				// Should be a map of config settings
 				if len(result) == 0 {
@@ -68,9 +78,14 @@ func TestJSONOutput(t *testing.T) {
 			command:   []string{"config", "get", "editor", "--json"},
 			needsAuth: false,
 			validate: func(t *testing.T, output string) error {
-				var result map[string]any
-				if err := json.Unmarshal([]byte(output), &result); err != nil {
+				var resp map[string]any
+				if err := json.Unmarshal([]byte(output), &resp); err != nil {
 					return err
+				}
+				// Response is wrapped: {"ok": true, "result": {...}}
+				result, ok := resp["result"].(map[string]any)
+				if !ok {
+					return fmt.Errorf("missing or invalid 'result' field")
 				}
 				// Should have editor field
 				if _, ok := result["editor"]; !ok {

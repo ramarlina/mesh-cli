@@ -50,8 +50,14 @@ func NewSmokeTestConfig(t *testing.T) *SmokeTestConfig {
 		}
 	}
 
+	// If binary not found, build it
 	if cliBinary == "" {
-		cliBinary = "mesh" // Assume it's in PATH
+		tmpBin := filepath.Join(t.TempDir(), "mesh")
+		cmd := exec.Command("go", "build", "-o", tmpBin, "../../cmd/mesh")
+		if err := cmd.Run(); err != nil {
+			t.Skipf("Could not build CLI binary: %v", err)
+		}
+		cliBinary = tmpBin
 	}
 
 	// Get API URL from environment
@@ -251,7 +257,7 @@ func TestCLIPostCommands(t *testing.T) {
 			fmt.Sprintf("MSH_CONFIG_DIR=%s", tempDir))
 
 		stdinPipe, _ := cmd.StdinPipe()
-		io.WriteString(stdinPipe, testContent+"\n")
+		_, _ = io.WriteString(stdinPipe, testContent+"\n")
 		stdinPipe.Close()
 
 		var stdout, stderr bytes.Buffer
@@ -273,7 +279,7 @@ func TestCLIPostCommands(t *testing.T) {
 	t.Run("Post_ShouldRejectEmptyContent", func(t *testing.T) {
 		// Create a temp file with no content
 		emptyFile := filepath.Join(tempDir, "empty.txt")
-		os.WriteFile(emptyFile, []byte(""), 0644)
+		_ = os.WriteFile(emptyFile, []byte(""), 0644)
 
 		cmd := exec.Command(cfg.CLIBinary, "post", "-")
 		cmd.Env = append(os.Environ(),
